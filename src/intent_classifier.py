@@ -3,6 +3,14 @@
 We use the training set of each dataset to build an embedding-based classifier,
 then classify both original and rewritten queries to detect intent shifts.
 """
+
+
+# Note from Praggnya: I went through all the files in main and reviewed their code. 
+# As I reviewed their code, I commented the general code structure to take note of what was happening
+# in order to later help with understanding what kind of improvements I can add.
+
+
+# all the imports
 import numpy as np
 import torch
 from sentence_transformers import SentenceTransformer
@@ -42,6 +50,9 @@ class EmbeddingIntentClassifier:
         )
         self.embeddings = torch.nn.functional.normalize(self.embeddings, dim=1)
 
+
+    # this is the most core function here for actually classifying the labels
+    # as we can see here, they are defaulting to use k=5
     def classify(self, queries: list[str], k: int = 5) -> list[dict]:
         """Classify queries using k-NN in embedding space.
 
@@ -92,6 +103,8 @@ class EmbeddingIntentClassifier:
 
         return results
 
+
+    # this is the check intent shift function which checks if the prediction for original is different from the rewrite predictions
     def check_intent_shift(self, originals: list[str], rewrites: list[str], k: int = 5):
         """Check if intent shifts between original and rewrite.
 

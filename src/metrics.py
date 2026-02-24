@@ -1,4 +1,11 @@
 """Evaluation metrics for intent preservation."""
+# Note from Praggnya: I went through all the files in main and reviewed their code. 
+# As I reviewed their code, I commented the general code structure to take note of what was happening
+# in order to later help with understanding what kind of improvements I can add.
+# for this file though, I did not comment frequently and instead focused on understanding how the
+# metrics were calculated. On the bottom of each calculating function, I took notes of my understanding
+# of the metrics.
+
 import numpy as np
 import torch
 from sentence_transformers import SentenceTransformer, CrossEncoder
@@ -44,6 +51,8 @@ def compute_edit_ratio(original: str, rewritten: str) -> float:
             dp[i][j] = min(dp[i - 1][j] + 1, dp[i][j - 1] + 1, dp[i - 1][j - 1] + cost)
 
     return dp[m][n] / max(m, 1)
+# this ratio essentially tries to give us a sense of how much of the original message was changed
+# objectively in terms of characters in the rewrite 
 
 
 def compute_semantic_similarity_batch(originals: list[str], rewrites: list[str]) -> list[float]:
@@ -55,6 +64,7 @@ def compute_semantic_similarity_batch(originals: list[str], rewrites: list[str])
     emb_r = model.encode(rewrites, batch_size=64, show_progress_bar=False, convert_to_tensor=True)
     sims = torch.nn.functional.cosine_similarity(emb_o, emb_r, dim=1)
     return sims.cpu().tolist()
+# this just checks the embeddings of sentences in comparison to each other
 
 
 def compute_nli_scores(originals: list[str], rewrites: list[str]) -> list[dict]:
@@ -95,6 +105,8 @@ def compute_nli_scores(originals: list[str], rewrites: list[str]) -> list[dict]:
         })
 
     return results
+# this checks in both directions if one sentence entails the other
+# honestly, to me it makes sense why this might be a better way to capture intent preservation
 
 
 def compute_all_metrics(originals: list[str], rewrites: list[str]) -> list[dict]:

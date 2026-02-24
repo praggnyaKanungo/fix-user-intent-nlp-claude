@@ -4,6 +4,11 @@ Experiment 1: Measures intent violation rates across LLM models and prompting st
 Experiment 2: Validates automated metrics against LLM-as-judge
 Experiment 3: Tests confidence-aware correction strategy
 """
+# Note from Praggnya: I went through all the files in main and reviewed their code. 
+# As I reviewed their code, I commented the general code structure to take note of what was happening
+# in order to later help with understanding what kind of improvements I can add.
+
+# all imports
 import os
 import sys
 import json
@@ -12,7 +17,6 @@ import numpy as np
 from datetime import datetime
 from tqdm import tqdm
 from collections import defaultdict
-
 from config import (
     set_seed, SEED, MODELS, CORRECTION_PROMPTS, N_SAMPLES_PER_DATASET,
     N_METRIC_VALIDATION, RESULTS_DIR, DATA_DIR, PLOTS_DIR,
@@ -25,6 +29,8 @@ from metrics import compute_all_metrics
 from intent_classifier import EmbeddingIntentClassifier
 
 
+# this function runs experiment 1 which is what looks at the classifier disagrements to decide if 
+# something is in intent shift or not
 def run_experiment_1(samples, model_name, prompt_key, classifier):
     """Run corrections and measure intent preservation.
 
@@ -43,6 +49,8 @@ def run_experiment_1(samples, model_name, prompt_key, classifier):
         response = call_llm(model_name, prompt)
         if response is None:
             response = sample["text"]  # fallback: no change
+
+        # here is it getting the rewrites and giving track of them
         rewrites.append(response)
 
         # Small delay to avoid rate limits
@@ -55,13 +63,20 @@ def run_experiment_1(samples, model_name, prompt_key, classifier):
 
     # Detect intent shifts
     print(f"  Checking intent shifts...")
+
+    # here it calls this function (that must be in another file) but this is the function that checks
+    # if the original and rewrites are the same (then no shift) or different (then there is an intention shift)
     shifts = classifier.check_intent_shift(originals, rewrites)
 
     # Also check against ground truth labels
+
+    # I am assuming they check against ground truth becasue if the claissfied couldnt even classify that, its unreliable
+    # question though: this could be used to filter these out, but i don't think that's being done. Why?
     gt_labels = [s["label_id"] for s in samples]
     gt_names = [s["label_name"] for s in samples]
     orig_preds = classifier.classify(originals)
 
+    # this is storing the results
     for i, sample in enumerate(samples):
         # Check if classifier correctly identifies original intent
         classifier_correct_on_original = orig_preds[i]["predicted_label"] == gt_labels[i]
@@ -83,6 +98,7 @@ def run_experiment_1(samples, model_name, prompt_key, classifier):
     return results
 
 
+# function for experiment 2 which takes the LLM as the judge
 def run_experiment_2(exp1_results, model_name="gpt-4.1"):
     """Validate metrics by using LLM-as-judge.
 
@@ -94,6 +110,8 @@ def run_experiment_2(exp1_results, model_name="gpt-4.1"):
     not_shifted = [r for r in exp1_results if not r["intent_shifted"]]
 
     rng = np.random.RandomState(SEED)
+
+    # here we are balancing the amount of shifted and non shifted (based on experiment 1)
     n_per_group = min(N_METRIC_VALIDATION // 2, len(shifted), len(not_shifted))
 
     if n_per_group == 0:
@@ -119,6 +137,8 @@ def run_experiment_2(exp1_results, model_name="gpt-4.1"):
     )
 
     judge_results = []
+
+    #
     for r in tqdm(subset, desc="  LLM-as-judge"):
         user_prompt = (
             f"Original query: \"{r['original']}\"\n"
@@ -137,6 +157,8 @@ def run_experiment_2(exp1_results, model_name="gpt-4.1"):
         else:
             judge_label = "error"
 
+        # storing the result of GPT said
+        # question: is there a reason they decided to use GPT as the judge here?
         judge_results.append({
             **r,
             "judge_response": judge_response,
@@ -148,6 +170,8 @@ def run_experiment_2(exp1_results, model_name="gpt-4.1"):
     return judge_results
 
 
+# function for the experiment 3 which is what tests the confident aware strategy
+# note: this method was already largely commented so I did not add any comments for myself
 def run_experiment_3(samples, classifier, model_name="gpt-4.1"):
     """Test confidence-aware correction strategy.
 
@@ -290,6 +314,8 @@ def run_experiment_3(samples, classifier, model_name="gpt-4.1"):
     }
 
 
+# this is the main function and it runs all the experiments, does the set up, and also handles the after math
+# I also did not comment this portion since it was already largely commented
 def main():
     set_seed(SEED)
 

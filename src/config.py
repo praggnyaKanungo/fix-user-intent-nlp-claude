@@ -1,4 +1,8 @@
 """Configuration for the intent preservation experiments."""
+# Note from Praggnya: I went through all the files in main and reviewed their code. 
+# As I reviewed their code, I commented the general code structure to take note of what was happening
+# in order to later help with understanding what kind of improvements I can add.
+# For this file though, as it is just the config, I did not have much to comment.
 import os
 import random
 import numpy as np
