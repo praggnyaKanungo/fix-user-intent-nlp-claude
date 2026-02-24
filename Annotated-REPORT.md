@@ -4,9 +4,15 @@
 
 **Research Question:** When LLMs rewrite or correct user queries, how often do they alter the user's original intent? Can a confidence-aware correction strategy preserve intent while minimizing unnecessary clarification?
 
-**Key Finding:** LLMs alter user intent in 1.5% to 15% of corrections depending on the aggressiveness of the rewriting strategy. Conservative correction ("fix errors") preserves intent 98.5% of the time, while more aggressive strategies ("rewrite clearly", "improve") cause intent shifts in 9-15% of cases. Claude Sonnet 4.5 makes more aggressive edits than GPT-4.1 and consequently causes more intent shifts. A confidence-aware strategy that selectively asks clarifying questions can eliminate intent violations entirely, at the cost of requesting clarification for only 9.3% of ambiguous queries.
+*Annotation: I think this is a very cool topic! As a Claude and ChatGPT user myself, I notice that sometimes I may prompt one thing but the LLM will interpret it differently and give me different results. This is definitely not fun, but also I do think the LLM asking for clarification can hinder usability because it would be annoying!*
+
+**Key Finding:** LLMs alter user intent in 1.5% to 15% of corrections depending on the aggressiveness of the rewriting strategy. Conservative correction ("fix errors") preserves intent 98.5% of the time, while more aggressive strategies ("rewrite clearly", "improve") cause intent shifts in 9-15% of cases. Claude Sonnet 4.5 makes more aggressive edits than GPT-4.1 and consequently causes more intent shifts. A confidence-aware strategy that selectively asks clarifying questions can eliminate intent violations entirely, at the cost of requesting clarification for only 9.3% of ambiguous queries. 
+
+*Annotation: how is this shift in intent detected? I'll aim to answer this by the end of reading this. What does a confident-aware strategy means in this case? Will aim to answer this by the end of this paper!*
 
 **Practical Implications:** Systems that rewrite user queries should use the most conservative correction strategy possible and only escalate to full rewrites when explicitly requested. When the system is uncertain, asking a short clarifying question is far better than guessing wrong.
+
+*Annotation: I agree yes! If the system is uncertain, it definitely should not guess and provide unexpected results because that would lose user trust.*
 
 ---
 
@@ -18,11 +24,18 @@ Autocomplete and intent detection systems often incorrectly correct users in way
 2. Intent violations are detectable using automated metrics
 3. A confidence-aware strategy reduces intent violations without excessive questioning
 
+*Annotation: Once again, not sure what they mean by automated metrics or confidence-aware strategy but will aim to answer that by the end of reading this.*
+
 ### Why This Matters
 Query correction is ubiquitous in search engines, chatbots, and virtual assistants. When a system "helpfully" rewrites a user's query but changes its meaning, the user gets wrong results and loses trust. This research quantifies the problem and proposes a practical solution.
 
+*Annotation: Yes, that's the exact thing I thought of when I first read the research question!*
+
 ### Expected Impact
 Understanding when and how LLMs change user intent enables the design of better correction systems that know when to fix, when to ask, and when to leave well enough alone.
+
+*Annotation: I think this is very impactful, and I chose this research repo because for my senior technical capstone, I proposed the design of an AI-tutoring system to teach introductory CS, and one thing I did worry about was the usability of the AI agent and how it can truly understand the knowledge level (see if the student truly has learned) and questions asked by the students. The AI agent misunderstanding the user is a huge risk that applies to the tutoring system I proposed as well, which was pivotal to me wanting to research Human-centered AI even more (to increase its use and applications for expanding accessibility in CS Education). My underlying motivation for these things is what caused me to even choose this repo.*
+
 
 ---
 
@@ -37,6 +50,8 @@ We used two established intent classification benchmarks:
 | CLINC150 | test | 5,500 | 150 + OOS | Multi-domain virtual assistant queries |
 
 These datasets were chosen because each query has a gold-standard intent label, allowing us to detect when a rewrite changes the underlying intent.
+
+*Annotations: Note to self that gold-standard intent label means the "true" and accepted intent label for that query*
 
 ### Example Samples
 
@@ -63,6 +78,8 @@ We stratified sampling across intents to ensure diverse coverage:
 ### Data Quality
 The datasets come from established NLP benchmarks with validated annotations. We verified our intent classifier achieves 93% accuracy on BANKING77 and 83% on CLINC150 using 5-NN with sentence embeddings, establishing a reliable baseline for detecting intent shifts.
 
+*Annotation: Intent classifier seems very accurate, but I wonder if there's a way to make it more accurate? I have not looked at the code yet, but I will look into the classifier code as well in case I can find a way to make an improvement there.*
+
 ---
 
 ## 4. Experiment Description
@@ -72,11 +89,15 @@ The datasets come from established NLP benchmarks with validated annotations. We
 #### High-Level Approach
 We prompt real state-of-the-art LLMs (GPT-4.1, Claude Sonnet 4.5) to correct/rewrite user queries under three increasingly aggressive strategies, then measure whether the rewritten query preserves the original intent. We define "intent preservation" operationally as: the rewritten query, when classified by an embedding-based intent classifier, maps to the same intent label as the original.
 
+*Annotation: I am just going to summarize to myself here to make sure I understand: We are prompting an LLM to rewrite a query we give it on a particular level of agression (for example, low, med, high in terms of how aggressively it can correct or rewrite it). Then, we will have a rewritten query. This new query that the LLM writes will be send into the embedding-based intent classifier. The point is to see if the intent is the same even after it corrects/rewrites it. The way we would know that the intent is preserved is if it maps to the same intent label as before. I think that's really cool!*
+
 #### Why This Method?
 1. Using real LLM APIs (not simulated) ensures our results reflect actual model behavior
 2. Intent classification datasets provide ground-truth labels for measuring intent shift
 3. Multiple prompting strategies test the spectrum from conservative to aggressive correction
 4. Two different LLM models test generalizability
+
+*Annotation: This makes logical sense to me for sure. Out of curiosity, I wonder why GPT and Claude specifically though! I did see that there are two other repos about the same topic but they are labeled with gemini and codex rather than claude. This means they tested a different model in those repos. If time permits, I would love to see how the results differed between these repos.*
 
 ### Implementation Details
 
@@ -97,6 +118,8 @@ We prompt real state-of-the-art LLMs (GPT-4.1, Claude Sonnet 4.5) to correct/rew
 | **rewrite_clearly** | "Rewrite the following user query to be clearer and more precise. Return ONLY the rewritten query, nothing else." | Medium |
 | **improve** | "Improve the following user query to better express the user's intent. Return ONLY the improved query, nothing else." | High |
 
+*Annotation: This is really interesting. While intuitively it makes sense why each of these prompts are assigned to the levels they are (low, med, and high), I wonder how these prompts were chosen. Is there a clear reasoning behind it or is it inituitive?*
+
 #### Hyperparameters
 | Parameter | Value | Rationale |
 |-----------|-------|-----------|
@@ -107,6 +130,8 @@ We prompt real state-of-the-art LLMs (GPT-4.1, Claude Sonnet 4.5) to correct/rew
 | Confidence threshold (low) | 0.40 | Empirically set |
 | Random seed | 42 | Standard reproducibility seed |
 
+*Annotations: Temperature being set to 0 makes it so the LLM gives the same output each time, which is certainly helpful in this research. Max tokens is set to 256 to make sure the length of the rewrites (what the LLM will give us). Here they are using k=5 because that's a standard choice, but I wonder if this could be improved (if a change in k can lead to differences in intention shift).*
+
 ### Experimental Protocol
 
 #### Experiment 1: Intent Violation Rate Measurement
@@ -114,10 +139,14 @@ We prompt real state-of-the-art LLMs (GPT-4.1, Claude Sonnet 4.5) to correct/rew
 - For each (query, rewrite) pair: compute semantic similarity, edit ratio, NLI scores, and intent classifier predictions
 - Measure intent shift as: original_predicted_intent ≠ rewrite_predicted_intent
 
+*Annotation: I have a question here...why is it comparing the rewrite_predicted_intent to original_predicted_intent? I am trying to understand why it would be compared to the predicted original intent when the dataset already features the gold standard intent label? Is this a choice for standardization here?*
+
 #### Experiment 2: Metric Validation (LLM-as-Judge)
 - 100 (query, rewrite) pairs sampled from Experiment 1 (balanced between shifted/preserved)
 - GPT-4.1 judges whether intent was preserved (PRESERVED/CHANGED/AMBIGUOUS)
 - Correlate automated metrics with judge labels
+
+*Annotation: I initially had trouble wrapping my head around why experiment 2 is even needed but I think I understand why now. Experiment 1 uses the classifier but how do we know if that's valid and if the classifier isn't overreacting to a small change for example? That's why it important to use the LLM as the judge here for validation.*
 
 #### Experiment 3: Confidence-Aware Strategy
 - 150 queries from BANKING77
@@ -125,12 +154,16 @@ We prompt real state-of-the-art LLMs (GPT-4.1, Claude Sonnet 4.5) to correct/rew
 - Apply threshold-based strategy: high confidence → auto-correct, medium → clarify, low → abstain
 - Compare against always-correct baseline
 
+*Annotation: I finally understandwhat the confidence aware strategy is! So based on the confidence score of a query (which they say is "fraction of k-NN agreeing" so like if 4 out of 5 agree, the fraction is 4/5=0.8), set some thresholds for what range we will autocorrect, what range we will ask clarificaiton questions, and what range we will not do anything at all. This is essentially a way to build an intelligent way to decide when to ask clarification questions vs when to not.*
+
 #### Reproducibility
 - Seed: 42
 - Temperature: 0 (deterministic)
 - Hardware: 2x RTX 3090 (24GB)
 - Total API calls: ~3,050 across all experiments
 - Total runtime: ~50 minutes
+
+*Annotation: Based on this, it might not be feasible for me to run this on my own, especially with all of these APIs that I do not have the token of.*
 
 ### Evaluation Metrics
 | Metric | What it Measures | Range |
@@ -161,9 +194,13 @@ We prompt real state-of-the-art LLMs (GPT-4.1, Claude Sonnet 4.5) to correct/rew
 - fix_errors vs improve: p < 0.0001 *** (both models)
 - rewrite_clearly vs improve: p = 0.53/0.62 ns (no significant difference)
 
+*Annotation: So based on the p-values there is a significant difference between the fix_errors vs rewrite_clearly and fix_errors vs improve. That makes sense that there would be a significant difference between low vs higher.*
+
 **By Dataset:**
 - BANKING77: 8.2% overall shift rate
 - CLINC150: 9.0% overall shift rate
+
+*Annotation: Just intuitively and not based on statistical tests, those shift rates seem very similar.*
 
 ### Experiment 2: Metric Validation
 
@@ -191,6 +228,8 @@ LLM-as-judge (GPT-4.1) labeled 100 examples: 94 as PRESERVED, 6 as CHANGED, 0 as
 
 **Confidence Distribution:** High (>0.8): 90.7%, Medium (0.4-0.8): 9.3%, Low (<0.4): 0.0%
 
+*Annotation: Note to self that these are the current thresholds!*
+
 #### Example Clarifications Generated
 
 | Original Query | Clarification | Confidence |
@@ -217,6 +256,8 @@ Both models achieve near-identical 1.5% intent shift rates with fix_errors. Nota
 **Finding 4: NLI bidirectional entailment is the best automated metric for detecting intent changes.**
 Among automated metrics, NLI bidirectional entailment (min of forward and backward) shows the strongest correlation with LLM-judge labels (r = -0.408, p < 0.0001). Edit ratio inverse also correlates well (r = 0.379, p = 0.0001). Semantic similarity alone is insufficient (r = 0.161, p = 0.109).
 
+*Annotation: This shows that Experiment 1's way of just seeing classifier disagreement as intent shift might not be super accurate or can be made more accurate and that NLI might be better. I honestly think it could be beneficital to use NLI bidirectional entailment alongside the current classifier disagreement.*
+
 **Finding 5: A confidence-aware strategy eliminates intent violations with minimal clarification.**
 The confidence-aware approach achieves 0% intent shifts while only asking clarifying questions for 9.3% of queries (those where the classifier confidence is medium). The generated clarifications are specific and helpful, asking about genuine ambiguities rather than generic "what do you mean?" questions.
 
@@ -227,6 +268,8 @@ The confidence-aware approach achieves 0% intent shifts while only asking clarif
 | H1: >15% intent violation for aggressive correction | **Partially supported** | Claude hits 15%, GPT reaches 10%. Average: ~12% |
 | H2: Automated metrics detect intent violations | **Supported** | NLI bidirectional: r=-0.408 (p<0.0001); Edit ratio: r=0.379 (p<0.001) |
 | H3: Confidence-aware strategy reduces violations | **Supported** | 0% violations vs 0.7% for always-correct, with only 9.3% clarification |
+
+*Annotation: It is clear that the current Confidence aware strategy reduces violations very well. I wonder how changing this strategy slightly would change the results.*
 
 ### Surprises and Insights
 
@@ -245,6 +288,8 @@ The confidence-aware approach achieves 0% intent shifts while only asking clarif
 2. **Context injection**: The model adds context not present in the original, steering toward a different intent. E.g., Claude's "improve" strategy often adds phrases like "I'd like to..." or "Can you help me with..." that change the pragmatic meaning.
 
 3. **Classifier noise**: Some "shifts" are due to the classifier being sensitive to surface-level word changes while the semantic intent is preserved. This accounts for most fix_errors shifts.
+
+*Annotations: These are really cool! I wonder if there are more types of intent shifts or how exactly this was observed?*
 
 ### Limitations
 
@@ -321,3 +366,8 @@ High confidence in the main finding (conservative > aggressive correction). Medi
 8. Wang et al. "Zero-shot Clarifying Question Generation for Conversational Search." 2023.
 9. Zhang et al. "BERTScore: Evaluating Text Generation with BERT." ICLR 2020.
 10. Zhang et al. "Correcting the Autocorrect: Context-Aware Typographic Error Correction." 2020.
+
+
+*Annotations: I had note to myself to answer the following after reading this as I did not understand this initially: how is this shift in intent detected and what does a confident-aware strategy means in this case? A shift in intent here was detected by disagreement of the classifier. A confident aware strategy here is a strategy for the LLM or builders making better systems for LLMS where they can use the confidence score to choose whether to abstain, ask a clarifying question, or just autocorrect (very high confidence).*
+
+
