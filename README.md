@@ -1,4 +1,30 @@
-# "Do You Mean...?": Fixing User Intent Without Annoying Them
+# Reviewing and Suggesting Improvements to "Do You Mean...?": Fixing User Intent Without Annoying Them
+## How I went about doing this:
+- Initially, I annotated REPORT.md in order to show my thinking/learning process. This file is now named Annotated-REPORT.md.
+- Then, I reviewed the code in src as this is where the core of the research lies! I commented files in this directory as well. My comments are labeled as “Praggnya: …” Doing this helped me understand how the descriptions in REPORT.md translates to code.
+- Throughout both annotating REPORT.md and reviewing the code in src, my annotations and comments often reflect potential improvements and questions I have. Using these ideas, I created a list of suggested improvements in LISTED-IMPROVEMENTS.md.
+- While creating this list, I also tried to implement as much of these improvements as possible into the code base. LISTED-IMPROVEMENTS.md will show code snippets I added and will describe what I changed. These changes can also be seen in the files themselves!
+- Then at the end, I updated the README.md on the branch to reflect this process, explain limitations I faced, express what else I would have looked into with more time and resources, and provide links to references and how I used them.
+
+## Limitations faced:
+- Running python download_datasets.py did not result in a successful download of BANKING77 for me. This meant that for me to test the classifier, I did have to change some things in the original code (even before I added any improvements) so I can use CLINC150 only.
+- Run_experiments.py was the most crucial file in src, but unfortunately I did not get to run that. That is because, from my understanding, I did not have the API tokens needed for running this file. Therefore, while I did make some tweaks in this file, I was not able to test it unfortunately. Therefore, I tried to make minimal tweaks in this file.
+
+## Things I would have done with more time/Next Steps:
+- I would try to obtain all resources needed, such as appropriate API keys, to actually be able to run run_experiments.py and see how the results differ about my improvements throughout the repository. I would iterate in making changes to achieve better results as I would now have the opportunity to actually run and obtain results as many times as needed.
+- I would like to do a statistical analysis to obtain quantifiable evidence of what k value (for kNN) would be optimal in this case.
+- I would also like to so a statistical analysis of different classifications methods against kNN, including the ones I limitedly implemented such as Centroids and Logistic Regression.
+- I would love to see how this research and confidence aware clarification strategies can be applied to an AI chatbot (perhaps we can continue using Claude as the model) in the context of education. How would this affect student engagement and understanding and would the AI chatbot respond in ways that are true to the question the students are asking? What could be ways to measure this? These are all questions I have that I would love to explore.
+
+## Resources Used:
+- https://www.geeksforgeeks.org/machine-learning/ml-nearest-centroid-classifier/: This link has an example implementation of centroid classifier and I used this to help implement it in the intent_classifier.py file.
+- https://www.geeksforgeeks.org/machine-learning/understanding-logistic-regression/: This link has an example implementation of logistic regression and I used this to help implement it in the intent_classifier.py file.
+- https://scikit-learn.org/stable/modules/generated/sklearn.linear_model.LogisticRegression.html: This link explained the functions in scikit-learn for Logistic Regression.
+-  https://realpython.com/logistic-regression-python/: This link showed how Logistic Regression can be implemented in Python.
+- ChatGPT 5.2 for debugging purposes.
+
+
+# Information about the Original Project
 
 Evaluating how often LLMs alter user intent when correcting/rewriting queries, and whether a confidence-aware clarification strategy can reduce intent violations without excessive questioning.
 
